@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Results Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            padding: 30px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .input-section .file-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:focus {
+            border-color: #4f46e5;
+            outline: none;
+        }
+
+        .load-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .filters-section {
+            background: #ffffff;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filters-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .clear-filters-btn {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clear-filters-btn:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+
+        .filter-select, .filter-input {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .filter-select:focus, .filter-input:focus {
+            border-color: #4f46e5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .outcome-filter {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .outcome-chip {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .outcome-chip.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+        }
+
+        .outcome-chip.passed {
+            border-color: #10b981;
+            color: #10b981;
+        }
+
+        .outcome-chip.passed.active {
+            background: #10b981;
+            color: white;
+        }
+
+        .outcome-chip.failed {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .outcome-chip.failed.active {
+            background: #ef4444;
+            color: white;
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .quick-filter-btn {
+            padding: 6px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #64748b;
+        }
+
+        .quick-filter-btn:hover {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .stats-section {
+            padding: 20px 30px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: none;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-passed {
+            color: #10b981;
+        }
+
+        .stat-failed {
+            color: #ef4444;
+        }
+
+        .stat-total {
+            color: #6366f1;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .results-header {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-count {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .sort-select {
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .scenario-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .scenario-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .scenario-card.hidden {
+            display: none;
+        }
+
+        .scenario-header {
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .scenario-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .scenario-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .outcome-badge {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .outcome-passed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .outcome-failed {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .scenario-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            min-height: 400px;
+        }
+
+        .conversation-panel {
+            background: #f8fafc;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .evaluation-panel {
+            padding: 20px;
+        }
+
+        .summary {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+
+        .criteria-section {
+            margin-bottom: 25px;
+        }
+
+        .criteria-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e293b;
+            font-size: 1.1rem;
+        }
+
+        .criteria-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid transparent;
+        }
+
+        .criteria-passed {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .criteria-failed {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .criteria-desc {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .criteria-reasoning {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .conversation {
+            background: #ffffff;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .conversation-title {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .conversation-messages {
+            flex: 1;
+            padding: 10px 0;
+        }
+
+        .message {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .message-user {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            margin-left: 60px;
+            border-radius: 0 20px 20px 20px;
+            margin-bottom: 10px;
+        }
+
+        .message-bot {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            margin-right: 60px;
+            border-radius: 20px 0 20px 20px;
+            margin-bottom: 10px;
+        }
+
+        .message-user .message-content {
+            text-align: right;
+        }
+
+        .message-bot .message-content {
+            text-align: left;
+        }
+
+        .speaker-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+        }
+
+        .user-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .bot-icon {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-text {
+            line-height: 1.6;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px;
+            text-align: center;
+            border: 1px solid #fca5a5;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .no-results-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .no-matches {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 16px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .input-section {
+                padding: 20px;
+            }
+            
+            .input-section .file-controls {
+                flex-direction: column;
+            }
+            
+            .file-input {
+                min-width: auto;
+            }
+            
+            .filters-section {
+                padding: 20px;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .outcome-filter {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .quick-filters {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .stats-section {
+                padding: 15px 20px;
+                flex-direction: column;
+            }
+            
+            .results-container {
+                padding: 20px;
+            }
+            
+            .scenario-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .scenario-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .scenario-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .message-user {
+                margin-left: 20px;
+            }
+
+            .message-bot {
+                margin-right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Evaluation Results Dashboard</h1>
+            <p>Comprehensive analysis of bot performance from uploaded data</p>
+        </div>
+
+        <div class="input-section">
+            <div class="file-controls">
+                <input 
+                    type="file" 
+                    id="csvFile" 
+                    accept=".csv,.txt,.tsv" 
+                    class="file-input"
+                >
+                <button onclick="loadFile()" class="load-btn">
+                    Load Data
+                </button>
+            </div>
+        </div>
+
+        <div id="filters-section" class="filters-section">
+            <div class="filters-header">
+                <div class="filters-title">
+                    🔍 Filters
+                </div>
+                <button onclick="clearAllFilters()" class="clear-filters-btn">
+                    Clear All
+                </button>
+            </div>
+            
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Outcome</label>
+                    <div class="outcome-filter">
+                        <div class="outcome-chip active" data-outcome="all" onclick="toggleOutcomeFilter(this)">All</div>
+                        <div class="outcome-chip failed" data-outcome="failed" onclick="toggleOutcomeFilter(this)">Failed</div>
+                        <div class="outcome-chip passed" data-outcome="passed" onclick="toggleOutcomeFilter(this)">Passed</div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Suite Name</label>
+                    <select id="suite-filter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Suites</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Run ID</label>
+                    <select id="run-filter" class="filter-select" onchange="applyFilters()">
+                        <option value="">All Runs</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Search Scenarios</label>
+                    <input 
+                        type="text" 
+                        id="search-filter" 
+                        class="filter-input" 
+                        placeholder="Search by scenario name..."
+                        oninput="applyFilters()"
+                    >
+                </div>
+            </div>
+
+            <div class="quick-filters">
+                <button class="quick-filter-btn" onclick="applyQuickFilter('failed-only')">
+                    ❌ Failed Cases Only
+                </button>
+                <button class="quick-filter-btn" onclick="applyQuickFilter('criteria-failed')">
+                    🎯 Criteria Failures
+                </button>
+                <button class="quick-filter-btn" onclick="applyQuickFilter('conversation-issues')">
+                    💬 Conversation Issues
+                </button>
+                <button class="quick-filter-btn" onclick="applyQuickFilter('recent-failures')">
+                    ⏰ Recent Failures
+                </button>
+            </div>
+        </div>
+
+        <div id="stats-section" class="stats-section">
+            <div class="stat-card">
+                <div class="stat-number stat-total" id="total-scenarios">0</div>
+                <div class="stat-label">Total Scenarios</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-passed" id="passed-scenarios">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-failed" id="failed-scenarios">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="success-rate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-total" id="filtered-count">0</div>
+                <div class="stat-label">Showing</div>
+            </div>
+        </div>
+
+        <div id="results-header" class="results-header">
+            <div class="results-count" id="results-count">
+                Showing 0 scenarios
+            </div>
+            <div class="sort-controls">
+                <span class="sort-label">Sort by:</span>
+                <select id="sort-select" class="sort-select" onchange="sortAndDisplayResults()">
+                    <option value="default">Default Order</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                    <option value="outcome-failed">Failed First</option>
+                    <option value="outcome-passed">Passed First</option>
+                    <option value="run-id">Run ID</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="results-area">
+            <div class="no-results">
+                <div class="no-results-icon">📁</div>
+                <h3>Upload Your CSV File</h3>
+                <p>Please select your evaluation results CSV file above to get started.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        let allData = [];
+        let processedData = [];
+        let filteredData = [];
+        let currentFilters = {
+            outcome: 'all',
+            suite: '',
+            runId: '',
+            search: ''
+        };
+
+        // Cache for parsed data to avoid re-parsing
+        let parsedCache = new Map();
+
+        async function loadFile() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a CSV file first');
+                return;
+            }
+            
+            const resultsArea = document.getElementById('results-area');
+            resultsArea.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing CSV file...</p>
+                </div>
+            `;
+            
+            try {
+                const csvContent = await file.text();
+                console.log('Raw CSV content preview:', csvContent.substring(0, 500));
+                
+                let parsed;
+                
+                // Try tab-delimited first
+                parsed = Papa.parse(csvContent, {
+                    header: true,
+                    delimiter: '\t',
+                    skipEmptyLines: true,
+                    transformHeader: header => header.trim()
+                });
+                
+                console.log('Tab-delimited parse result:', {
+                    fields: parsed.meta.fields,
+                    dataLength: parsed.data.length,
+                    firstRow: parsed.data[0]
+                });
+                
+                // If tab parsing doesn't work well, try comma
+                if (!parsed.meta.fields || parsed.meta.fields.length < 5) {
+                    parsed = Papa.parse(csvContent, {
+                        header: true,
+                        delimiter: ',',
+                        skipEmptyLines: true,
+                        transformHeader: header => header.trim()
+                    });
+                    console.log('Comma-delimited parse result:', {
+                        fields: parsed.meta.fields,
+                        dataLength: parsed.data.length
+                    });
+                }
+
+                if (parsed.errors.length > 0) {
+                    console.warn('CSV parsing warnings:', parsed.errors);
+                }
+
+                allData = parsed.data.filter(row => {
+                    // Filter out empty rows
+                    const hasContent = Object.values(row).some(value => 
+                        value && typeof value === 'string' && value.trim() !== ''
+                    );
+                    return hasContent;
+                });
+
+                // Process data for display
+                processData();
+                setupFilters();
+                
+                // Show all data initially (no filters applied)
+                filteredData = [...processedData];
+                displayResults();
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                resultsArea.innerHTML = `
+                    <div class="error">
+                        <h3>Error Loading Data</h3>
+                        <p>Failed to load the CSV file: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function processData() {
+            // Pre-process data to avoid heavy operations during filtering
+            processedData = allData.map(row => {
+                const processed = {
+                    ...row,
+                    runId: row.run_id || row['run_id'] || 'N/A',
+                    suiteName: row.suite_name || row['suite_name'] || 'N/A',
+                    scenarioId: row.scenario_id || row['scenario_id'] || 'N/A',
+                    scenarioName: row.scenario_name || row['scenario_name'] || 'N/A',
+                    finalOutcome: row.final_outcome || row['final_outcome'] || 'unknown',
+                    summary: row.summary || row['summary'] || 'No summary available',
+                    criteriaResults: row.criteria_results || row['criteria_results'] || '',
+                    conversationHistory: row.conversation_history || row['conversation_history'] || ''
+                };
+
+                // Pre-parse complex fields and cache them
+                const cacheKey = `${processed.scenarioId}-${processed.runId}`;
+                if (!parsedCache.has(cacheKey)) {
+                    parsedCache.set(cacheKey, {
+                        criteria: parseCriteriaResults(processed.criteriaResults),
+                        conversation: parseConversationHistory(processed.conversationHistory)
+                    });
+                }
+
+                return processed;
+            });
+
+            console.log('Processed data:', processedData.length, 'items');
+        }
+
+        function setupFilters() {
+            if (!processedData || processedData.length === 0) return;
+
+            // Populate suite filter
+            const suites = [...new Set(processedData.map(row => row.suiteName))].filter(suite => suite !== 'N/A').sort();
+            
+            const suiteSelect = document.getElementById('suite-filter');
+            suiteSelect.innerHTML = '<option value="">All Suites</option>';
+            suites.forEach(suite => {
+                const option = document.createElement('option');
+                option.value = suite;
+                option.textContent = suite;
+                suiteSelect.appendChild(option);
+            });
+
+            // Populate run ID filter
+            const runIds = [...new Set(processedData.map(row => row.runId))].filter(id => id !== 'N/A').sort();
+            
+            const runSelect = document.getElementById('run-filter');
+            runSelect.innerHTML = '<option value="">All Runs</option>';
+            runIds.forEach(runId => {
+                const option = document.createElement('option');
+                option.value = runId;
+                option.textContent = runId;
+                runSelect.appendChild(option);
+            });
+
+            // Show filters section
+            document.getElementById('filters-section').style.display = 'block';
+        }
+
+        function toggleOutcomeFilter(element) {
+            // Remove active class from all outcome chips
+            document.querySelectorAll('.outcome-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            
+            // Add active class to clicked chip
+            element.classList.add('active');
+            
+            // Update filter and apply
+            currentFilters.outcome = element.dataset.outcome;
+            applyFilters();
+        }
+
+        function applyQuickFilter(filterType) {
+            clearAllFilters();
+            
+            switch(filterType) {
+                case 'failed-only':
+                    currentFilters.outcome = 'failed';
+                    document.querySelector('.outcome-chip[data-outcome="failed"]').classList.add('active');
+                    break;
+                    
+                case 'criteria-failed':
+                    currentFilters.outcome = 'failed';
+                    currentFilters.search = 'criteria';
+                    document.querySelector('.outcome-chip[data-outcome="failed"]').classList.add('active');
+                    document.getElementById('search-filter').value = 'criteria';
+                    break;
+                    
+                case 'conversation-issues':
+                    currentFilters.outcome = 'failed';
+                    currentFilters.search = 'conversation';
+                    document.querySelector('.outcome-chip[data-outcome="failed"]').classList.add('active');
+                    document.getElementById('search-filter').value = 'conversation';
+                    break;
+                    
+                case 'recent-failures':
+                    currentFilters.outcome = 'failed';
+                    document.querySelector('.outcome-chip[data-outcome="failed"]').classList.add('active');
+                    // Sort by most recent first
+                    document.getElementById('sort-select').value = 'run-id';
+                    break;
+            }
+            
+            applyFilters();
+        }
+
+        function clearAllFilters() {
+            currentFilters = {
+                outcome: 'all',
+                suite: '',
+                runId: '',
+                search: ''
+            };
+            
+            // Reset UI
+            document.querySelectorAll('.outcome-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            document.querySelector('.outcome-chip[data-outcome="all"]').classList.add('active');
+            
+            document.getElementById('suite-filter').value = '';
+            document.getElementById('run-filter').value = '';
+            document.getElementById('search-filter').value = '';
+            document.getElementById('sort-select').value = 'default';
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            if (!processedData || processedData.length === 0) return;
+
+            // Update current filters from UI
+            currentFilters.suite = document.getElementById('suite-filter').value;
+            currentFilters.runId = document.getElementById('run-filter').value;
+            currentFilters.search = document.getElementById('search-filter').value.toLowerCase();
+
+            // Apply filters
+            filteredData = processedData.filter(row => {
+                // Outcome filter
+                if (currentFilters.outcome !== 'all') {
+                    if (row.finalOutcome !== currentFilters.outcome) return false;
+                }
+                
+                // Suite filter
+                if (currentFilters.suite) {
+                    if (row.suiteName !== currentFilters.suite) return false;
+                }
+                
+                // Run ID filter
+                if (currentFilters.runId) {
+                    if (row.runId !== currentFilters.runId) return false;
+                }
+                
+                // Search filter
+                if (currentFilters.search) {
+                    const searchText = currentFilters.search;
+                    const scenarioName = row.scenarioName.toLowerCase();
+                    const summary = row.summary.toLowerCase();
+                    const criteriaResults = row.criteriaResults.toLowerCase();
+                    
+                    if (!scenarioName.includes(searchText) && 
+                        !summary.includes(searchText) && 
+                        !criteriaResults.includes(searchText)) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+
+            sortAndDisplayResults();
+        }
+
+        function sortAndDisplayResults() {
+            if (!filteredData) return;
+
+            const sortBy = document.getElementById('sort-select').value;
+            
+            filteredData.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name-asc':
+                        return a.scenarioName.toLowerCase().localeCompare(b.scenarioName.toLowerCase());
+                        
+                    case 'name-desc':
+                        return b.scenarioName.toLowerCase().localeCompare(a.scenarioName.toLowerCase());
+                        
+                    case 'outcome-failed':
+                        if (a.finalOutcome === 'failed' && b.finalOutcome !== 'failed') return -1;
+                        if (a.finalOutcome !== 'failed' && b.finalOutcome === 'failed') return 1;
+                        return 0;
+                        
+                    case 'outcome-passed':
+                        if (a.finalOutcome === 'passed' && b.finalOutcome !== 'passed') return -1;
+                        if (a.finalOutcome !== 'passed' && b.finalOutcome === 'passed') return 1;
+                        return 0;
+                        
+                    case 'run-id':
+                        return b.runId.localeCompare(a.runId); // Most recent first
+                        
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayResults();
+        }
+
+        function displayResults() {
+            const resultsArea = document.getElementById('results-area');
+            const statsSection = document.getElementById('stats-section');
+            const resultsHeader = document.getElementById('results-header');
+            
+            if (!processedData || processedData.length === 0) {
+                resultsArea.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">📊</div>
+                        <h3>No Data Available</h3>
+                        <p>The CSV file appears to be empty or could not be parsed.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate statistics for all data (not just filtered)
+            const totalScenarios = processedData.length;
+            const passedScenarios = processedData.filter(row => row.finalOutcome === 'passed').length;
+            const failedScenarios = totalScenarios - passedScenarios;
+            const successRate = totalScenarios > 0 ? Math.round((passedScenarios / totalScenarios) * 100) : 0;
+
+            // Update statistics
+            document.getElementById('total-scenarios').textContent = totalScenarios;
+            document.getElementById('passed-scenarios').textContent = passedScenarios;
+            document.getElementById('failed-scenarios').textContent = failedScenarios;
+            document.getElementById('success-rate').textContent = successRate + '%';
+            document.getElementById('success-rate').className = `stat-number ${successRate >= 70 ? 'stat-passed' : 'stat-failed'}`;
+            
+            // Update filtered count
+            const filteredCount = filteredData.length;
+            document.getElementById('filtered-count').textContent = filteredCount;
+            if (filteredCount !== totalScenarios) {
+                document.getElementById('filtered-count').className = 'stat-number stat-failed';
+            } else {
+                document.getElementById('filtered-count').className = 'stat-number stat-total';
+            }
+            
+            // Update results count
+            document.getElementById('results-count').textContent = `Showing ${filteredCount} of ${totalScenarios} scenarios`;
+            
+            statsSection.style.display = 'flex';
+            resultsHeader.style.display = 'flex';
+
+            // Show no matches message if filtered data is empty
+            if (filteredData.length === 0 && processedData.length > 0) {
+                resultsArea.innerHTML = `
+                    <div class="no-matches">
+                        <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;">🔍</div>
+                        <h3>No matches found</h3>
+                        <p>Try adjusting your filters or search terms.</p>
+                        <button onclick="clearAllFilters()" style="margin-top: 15px; padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Clear All Filters
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Use requestAnimationFrame to break up the rendering and keep UI responsive
+            renderScenariosInBatches(filteredData);
+        }
+
+        function renderScenariosInBatches(data, batchSize = 10) {
+            const resultsArea = document.getElementById('results-area');
+            resultsArea.innerHTML = '<div class="results-container"></div>';
+            const container = resultsArea.querySelector('.results-container');
+            
+            let currentIndex = 0;
+            
+            function renderBatch() {
+                const endIndex = Math.min(currentIndex + batchSize, data.length);
+                const batchHTML = [];
+                
+                for (let i = currentIndex; i < endIndex; i++) {
+                    batchHTML.push(generateScenarioHTML(data[i]));
+                }
+                
+                container.insertAdjacentHTML('beforeend', batchHTML.join(''));
+                currentIndex = endIndex;
+                
+                if (currentIndex < data.length) {
+                    // Use requestAnimationFrame to yield control back to the browser
+                    requestAnimationFrame(renderBatch);
+                }
+            }
+            
+            renderBatch();
+        }
+
+        function generateScenarioHTML(row) {
+            const cacheKey = `${row.scenarioId}-${row.runId}`;
+            const cached = parsedCache.get(cacheKey) || { criteria: [], conversation: [] };
+            
+            const criteriaHTML = cached.criteria.length > 0 
+                ? `<div class="criteria-section">
+                    <div class="criteria-title">🎯 Evaluation Criteria</div>
+                    ${cached.criteria.map(criteria => `
+                        <div class="criteria-item ${criteria.outcome === 'passed' ? 'criteria-passed' : 'criteria-failed'}">
+                            <div class="criteria-desc">
+                                ${criteria.outcome === 'passed' ? '✅' : '❌'} ${criteria.criteria_description}
+                            </div>
+                            <div class="criteria-reasoning">${criteria.reasoning}</div>
+                        </div>
+                    `).join('')}
+                   </div>`
+                : '';
+
+            const conversationHTML = cached.conversation.length > 0 
+                ? `<div class="conversation">
+                    <div class="conversation-title">💬 Conversation History</div>
+                    <div class="conversation-messages">
+                        ${cached.conversation.map(message => `
+                            <div class="message message-${message.speaker}">
+                                <div class="speaker-icon ${message.speaker}-icon">
+                                    ${message.speaker === 'user' ? 'U' : 'B'}
+                                </div>
+                                <div class="message-content">
+                                    <div class="message-text">${escapeHtml(message.message)}</div>
+                                    <div class="message-time">${formatTime(message.timestamp)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                   </div>`
+                : `<div class="conversation">
+                    <div class="conversation-title">💬 Conversation History</div>
+                    <div style="padding: 40px 20px; text-align: center; color: #6b7280;">
+                        <div style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;">💭</div>
+                        No conversation data available
+                    </div>
+                   </div>`;
+
+            return `
+                <div class="scenario-card" data-outcome="${row.finalOutcome}" data-suite="${row.suiteName}" data-run="${row.runId}">
+                    <div class="scenario-header">
+                        <div>
+                            <div class="scenario-title">${escapeHtml(row.scenarioName)}</div>
+                            <div class="scenario-meta">
+                                <span><strong>Run ID:</strong> ${escapeHtml(row.runId)}</span>
+                                <span><strong>Suite:</strong> ${escapeHtml(row.suiteName)}</span>
+                                <span><strong>Scenario ID:</strong> ${escapeHtml(row.scenarioId)}</span>
+                            </div>
+                        </div>
+                        <span class="outcome-badge ${row.finalOutcome === 'passed' ? 'outcome-passed' : 'outcome-failed'}">
+                            ${row.finalOutcome === 'passed' ? '✅ Passed' : '❌ Failed'}
+                        </span>
+                    </div>
+
+                    <div class="scenario-content">
+                        <!-- Left Panel: Conversation History -->
+                        <div class="conversation-panel">
+                            ${conversationHTML}
+                        </div>
+
+                        <!-- Right Panel: Evaluation Details -->
+                        <div class="evaluation-panel">
+                            <div class="summary">
+                                <div class="summary-title">📝 Summary</div>
+                                <div>${escapeHtml(row.summary)}</div>
+                            </div>
+                            ${criteriaHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function parseCriteriaResults(criteriaString) {
+            if (!criteriaString || criteriaString.trim() === '') return [];
+            
+            const lines = criteriaString.split('\n').filter(line => line.trim());
+            const criteria = [];
+            let currentCriteria = {};
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('Description:')) {
+                    if (currentCriteria.criteria_description) {
+                        criteria.push(currentCriteria);
+                    }
+                    currentCriteria = {
+                        criteria_description: trimmedLine.replace('Description:', '').trim()
+                    };
+                } else if (trimmedLine.startsWith('Outcome:')) {
+                    currentCriteria.outcome = trimmedLine.replace('Outcome:', '').trim();
+                } else if (trimmedLine.startsWith('Reasoning:')) {
+                    currentCriteria.reasoning = trimmedLine.replace('Reasoning:', '').trim();
+                }
+            }
+            
+            if (currentCriteria.criteria_description) {
+                criteria.push(currentCriteria);
+            }
+            
+            return criteria;
+        }
+
+        function parseConversationHistory(conversationString) {
+            if (!conversationString || conversationString.trim() === '') return [];
+            
+            const messages = [];
+            const lines = conversationString.split('\n').filter(line => line.trim());
+            
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                const match = trimmedLine.match(/\[(user|llm)\s*-\s*([^\]]+)\]:\s*(.+)/);
+                if (match) {
+                    messages.push({
+                        speaker: match[1],
+                        timestamp: match[2],
+                        message: match[3]
+                    });
+                }
+            }
+            
+            return messages;
+        }
+
+        function formatTime(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleTimeString();
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize with empty state
+        window.addEventListener('load', function() {
+            const resultsArea = document.getElementById('results-area');
+            resultsArea.innerHTML = `
+                <div class="no-results">
+                    <div class="no-results-icon">📁</div>
+                    <h3>Upload Your CSV File</h3>
+                    <p>Please select your evaluation results CSV file above to get started.</p>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
