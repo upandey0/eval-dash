@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot Quality Analytics Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .date-input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .date-input label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .date-input input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .analyze-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .analyze-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .loading .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+        
+        .metric-card.primary { border-left-color: #3498db; }
+        .metric-card.success { border-left-color: #2ecc71; }
+        .metric-card.warning { border-left-color: #f39c12; }
+        .metric-card.danger { border-left-color: #e74c3c; }
+        .metric-card.info { border-left-color: #9b59b6; }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .metric-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .metric-subtitle {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        
+        .progress-fill.excellent { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+        .progress-fill.good { background: linear-gradient(90deg, #3498db, #2980b9); }
+        .progress-fill.average { background: linear-gradient(90deg, #f39c12, #e67e22); }
+        .progress-fill.poor { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        
+        .breakdown {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .summary-stats {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🤖 AI Chatbot Quality Analytics</h1>
+            <p style="color: #7f8c8d; font-size: 16px;">MongoDB-Powered Conversation Analysis</p>
+        </div>
+        
+        <div class="controls">
+            <div class="date-input">
+                <label for="dateFrom">From Date:</label>
+                <input type="date" id="dateFrom" value="2025-07-01">
+            </div>
+            <div class="date-input">
+                <label for="dateTo">To Date:</label>
+                <input type="date" id="dateTo" value="2025-07-23">
+            </div>
+            <button class="analyze-btn" onclick="analyzeConversations()" id="analyzeBtn">
+                🔍 Analyze Conversations
+            </button>
+        </div>
+        
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Analyzing conversations... This may take a few minutes.</p>
+            <p id="progressText">Fetching chat sessions...</p>
+        </div>
+        
+        <div id="errorSection" class="error hidden">
+            <p id="errorText"></p>
+        </div>
+        
+        <div id="resultsSection" class="hidden">
+            <div class="summary-stats">
+                <h3 style="text-align: center; margin-bottom: 20px; color: #2c3e50;">📊 Analysis Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSessions">0</div>
+                        <div class="stat-label">Total Sessions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="processedSessions">0</div>
+                        <div class="stat-label">Processed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="failedSessions">0</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgResponseTime">0ms</div>
+                        <div class="stat-label">Avg Response Time</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="analysisTime">0s</div>
+                        <div class="stat-label">Analysis Duration</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="overallScoreBackend">0</div>
+                        <div class="stat-label">Backend Score</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metrics-grid">
+                <!-- Overall Quality Score -->
+                <div class="metric-card primary">
+                    <div class="metric-header">
+                        <span class="metric-title">Overall Quality Score</span>
+                        <span style="font-size: 20px;">📊</span>
+                    </div>
+                    <div class="metric-value" id="overallScore">0</div>
+                    <div class="metric-subtitle">Weighted average across all metrics</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="overallScoreBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Comprehensive Score</span>
+                        <span id="overallScoreChange">--</span>
+                    </div>
+                </div>
+                
+                <!-- Chat Completion Rate -->
+                <div class="metric-card success">
+                    <div class="metric-header">
+                        <span class="metric-title">Chat Completion Rate</span>
+                        <span style="font-size: 20px;">✅</span>
+                    </div>
+                    <div class="metric-value" id="completionRate">0%</div>
+                    <div class="metric-subtitle" id="completionBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="completionBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Completed Chats</span>
+                        <span>Target: 90%+</span>
+                    </div>
+                </div>
+                
+                <!-- Issue Resolution Rate -->
+                <div class="metric-card success">
+                    <div class="metric-header">
+                        <span class="metric-title">Issue Resolution Rate</span>
+                        <span style="font-size: 20px;">🎯</span>
+                    </div>
+                    <div class="metric-value" id="resolutionRate">0%</div>
+                    <div class="metric-subtitle" id="resolutionBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="resolutionBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Resolved Issues</span>
+                        <span>Target: 80%+</span>
+                    </div>
+                </div>
+                
+                <!-- User Experience Score -->
+                <div class="metric-card primary">
+                    <div class="metric-header">
+                        <span class="metric-title">User Experience Score</span>
+                        <span style="font-size: 20px;">⭐</span>
+                    </div>
+                    <div class="metric-value" id="userExp">0/5</div>
+                    <div class="metric-subtitle" id="userExpBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="userExpBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Experience Rating</span>
+                        <span>Target: 4.0+</span>
+                    </div>
+                </div>
+                
+                <!-- User Effort Score -->
+                <div class="metric-card primary">
+                    <div class="metric-header">
+                        <span class="metric-title">User Effort Score</span>
+                        <span style="font-size: 20px;">🔄</span>
+                    </div>
+                    <div class="metric-value" id="userEffort">0/5</div>
+                    <div class="metric-subtitle" id="userEffortBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="userEffortBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Lower is better</span>
+                        <span>Target: <3.0</span>
+                    </div>
+                </div>
+                
+                <!-- Response Accuracy -->
+                <div class="metric-card success">
+                    <div class="metric-header">
+                        <span class="metric-title">Response Accuracy</span>
+                        <span style="font-size: 20px;">🎯</span>
+                    </div>
+                    <div class="metric-value" id="accuracy">0%</div>
+                    <div class="metric-subtitle" id="accuracyBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="accuracyBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Correct Responses</span>
+                        <span>Target: 90%+</span>
+                    </div>
+                </div>
+                
+                <!-- Human Escalation Rate -->
+                <div class="metric-card warning">
+                    <div class="metric-header">
+                        <span class="metric-title">Human Escalation Rate</span>
+                        <span style="font-size: 20px;">📞</span>
+                    </div>
+                    <div class="metric-value" id="escalationRate">0%</div>
+                    <div class="metric-subtitle" id="escalationBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill average" id="escalationBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Escalated to Human</span>
+                        <span>Target: <10%</span>
+                    </div>
+                </div>
+                
+                <!-- User Sentiment -->
+                <div class="metric-card info">
+                    <div class="metric-header">
+                        <span class="metric-title">User Sentiment</span>
+                        <span style="font-size: 20px;">😊</span>
+                    </div>
+                    <div class="metric-value" id="userSentiment">Neutral</div>
+                    <div class="metric-subtitle" id="sentimentBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="sentimentBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Overall Mood</span>
+                        <span>Target: Positive</span>
+                    </div>
+                </div>
+                
+                <!-- Bot Tone -->
+                <div class="metric-card info">
+                    <div class="metric-header">
+                        <span class="metric-title">Bot Tone Quality</span>
+                        <span style="font-size: 20px;">🗣️</span>
+                    </div>
+                    <div class="metric-value" id="botTone">Professional</div>
+                    <div class="metric-subtitle" id="botToneBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="botToneBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Communication Style</span>
+                        <span>Consistency: High</span>
+                    </div>
+                </div>
+                
+                <!-- AnyDesk Usage -->
+                <div class="metric-card primary">
+                    <div class="metric-header">
+                        <span class="metric-title">Remote Support Usage</span>
+                        <span style="font-size: 20px;">💻</span>
+                    </div>
+                    <div class="metric-value" id="anydeskUsage">0%</div>
+                    <div class="metric-subtitle" id="anydeskBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="anydeskBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>AnyDesk Required</span>
+                        <span>Complex Issues</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const BACKEND_API_URL = 'https://eval-sys-back.onrender.com/api'; // Update this with your backend server URL
+        
+        // Check backend health
+        async function checkBackendHealth() {
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/health`);
+                const health = await response.json();
+                console.log('Backend health:', health);
+                return health.status === 'healthy';
+            } catch (error) {
+                console.error('Backend health check failed:', error);
+                return false;
+            }
+        }
+        
+        // Get session count preview
+        async function getSessionCount(fromDate, toDate) {
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/session-count`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fromDate, toDate })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    return result.count;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Error getting session count:', error);
+                throw error;
+            }
+        }
+        
+        // Call backend API for analysis
+        async function analyzeConversationsViaAPI(fromDate, toDate) {
+            try {
+                const response = await fetch(`${BACKEND_API_URL}/analyze-conversations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fromDate, toDate })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data;
+                } else {
+                    throw new Error(result.error || 'Analysis failed');
+                }
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    throw new Error('Cannot connect to backend server. Make sure the Node.js server is running on port 3001.');
+                }
+                throw error;
+            }
+        }
+        
+        // Process backend data and update UI
+        function processBackendData(backendData) {
+            const aggregateStats = backendData.aggregateStats;
+            
+            // Extract values directly from aggregateStats
+            const chatCompletionYes = aggregateStats.average_chat_completion_rate?.yes || 0;
+            const chatCompletionNo = aggregateStats.average_chat_completion_rate?.no || 0;
+            
+            const sentimentNeutral = aggregateStats.average_user_sentiment_distribution?.neutral || 0;
+            const sentimentFrustrated = aggregateStats.average_user_sentiment_distribution?.frustrated || 0;
+            const sentimentPositive = aggregateStats.average_user_sentiment_distribution?.positive || 0;
+            const sentimentNegative = aggregateStats.average_user_sentiment_distribution?.negative || 0;
+            
+            const botToneProfessional = aggregateStats.average_bot_tone_distribution?.professional || 0;
+            const botToneFriendly = aggregateStats.average_bot_tone_distribution?.friendly || 0;
+            const botToneHelpful = aggregateStats.average_bot_tone_distribution?.helpful || 0;
+            
+            const anydeskTrue = aggregateStats.average_anydesk_required?.true || 0;
+            const anydeskFalse = aggregateStats.average_anydesk_required?.false || 0;
+            
+            const userExperienceLevel = aggregateStats.average_user_experience_level || 0;
+            const userEffortLevel = aggregateStats.average_user_effort_level || 0;
+            
+            const accuracyCorrect = aggregateStats.average_response_accuracy?.correct || 0;
+            const accuracyPartial = aggregateStats.average_response_accuracy?.['partially correct'] || 0;
+            const accuracyWrong = aggregateStats.average_response_accuracy?.wrong || 0;
+            
+            const resolutionResolved = aggregateStats.average_issue_resolution_rate?.resolved || 0;
+            const resolutionUnresolved = aggregateStats.average_issue_resolution_rate?.unresolved || 0;
+            
+            const escalationYes = aggregateStats.average_human_escalation_rate?.yes || 0;
+            const escalationNo = aggregateStats.average_human_escalation_rate?.no || 0;
+            
+            return {
+                // Basic stats
+                totalSessions: backendData.totalSessions,
+                processedSessions: backendData.processedSessions,
+                failedSessions: backendData.failedSessions || 0,
+                executionTime: backendData.executionTime,
+                overallScoreBackend: backendData.overallScore,
+                
+                // Chat completion
+                chatCompletionRate: chatCompletionYes,
+                chatCompletionBreakdown: `Completed: ${chatCompletionYes}% | Incomplete: ${chatCompletionNo}%`,
+                
+                // User sentiment
+                userSentimentPrimary: sentimentNeutral > sentimentFrustrated && sentimentNeutral > (sentimentPositive || 0) && sentimentNeutral > (sentimentNegative || 0) ? 'Neutral' :
+                                     sentimentFrustrated > sentimentNeutral ? 'Frustrated' :
+                                     (sentimentPositive || 0) > sentimentNeutral ? 'Positive' : 'Neutral',
+                sentimentBreakdown: `Neutral: ${sentimentNeutral}% | Frustrated: ${sentimentFrustrated}% | Positive: ${sentimentPositive || 0}%`,
+                sentimentScore: sentimentNeutral + (sentimentPositive || 0), // Neutral + Positive as good sentiment
+                
+                // Bot tone
+                botTonePrimary: botToneProfessional > (botToneFriendly || 0) && botToneProfessional > (botToneHelpful || 0) ? 'Professional' :
+                               (botToneFriendly || 0) > botToneProfessional ? 'Friendly' :
+                               (botToneHelpful || 0) > botToneProfessional ? 'Helpful' : 'Professional',
+                botToneBreakdown: `Professional: ${botToneProfessional}% | Friendly: ${botToneFriendly || 0}% | Helpful: ${botToneHelpful || 0}%`,
+                botToneScore: botToneProfessional + (botToneFriendly || 0) + (botToneHelpful || 0),
+                
+                // AnyDesk usage
+                anydeskUsage: anydeskTrue,
+                anydeskBreakdown: `Required: ${anydeskTrue}% | Not Required: ${anydeskFalse}%`,
+                
+                // User experience
+                userExperienceLevel: userExperienceLevel,
+                userExperiencePercent: (userExperienceLevel / 5) * 100,
+                userExperienceBreakdown: `Average Rating: ${userExperienceLevel.toFixed(1)}/5`,
+                
+                // User effort
+                userEffortLevel: userEffortLevel,
+                userEffortPercent: ((6 - userEffortLevel) / 5) * 100, // Inverted - lower effort is better
+                userEffortBreakdown: `Average Effort: ${userEffortLevel.toFixed(1)}/5 (Lower is better)`,
+                
+                // Response accuracy
+                accuracyPercent: accuracyCorrect + accuracyPartial,
+                accuracyBreakdown: `Correct: ${accuracyCorrect}% | Partial: ${accuracyPartial}% | Wrong: ${accuracyWrong}%`,
+                
+                // Issue resolution
+                resolutionRate: resolutionResolved,
+                resolutionBreakdown: `Resolved: ${resolutionResolved}% | Unresolved: ${resolutionUnresolved}%`,
+                
+                // Escalation
+                escalationRate: escalationYes,
+                escalationBreakdown: `Escalated: ${escalationYes}% | Not Escalated: ${escalationNo}%`,
+                
+                // Overall calculated score (weighted)
+                overallCalculatedScore: this.calculateOverallScore({
+                    chatCompletionRate: chatCompletionYes,
+                    resolutionRate: resolutionResolved,
+                    userExperiencePercent: (userExperienceLevel / 5) * 100,
+                    accuracyPercent: accuracyCorrect + accuracyPartial,
+                    escalationScore: escalationNo, // No escalation is good
+                    userEffortPercent: ((6 - userEffortLevel) / 5) * 100,
+                    sentimentScore: sentimentNeutral + (sentimentPositive || 0)
+                })
+            };
+        }
+        
+        // Calculate overall weighted score
+        function calculateOverallScore(metrics) {
+            const weights = {
+                chatCompletion: 0.20,
+                resolution: 0.20,
+                userExperience: 0.15,
+                accuracy: 0.15,
+                escalation: 0.10,
+                userEffort: 0.10,
+                sentiment: 0.10
+            };
+            
+            const weightedScore = (
+                (metrics.chatCompletionRate * weights.chatCompletion) +
+                (metrics.resolutionRate * weights.resolution) +
+                (metrics.userExperiencePercent * weights.userExperience) +
+                (metrics.accuracyPercent * weights.accuracy) +
+                (metrics.escalationScore * weights.escalation) +
+                (metrics.userEffortPercent * weights.userEffort) +
+                (metrics.sentimentScore * weights.sentiment)
+            );
+            
+            return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
+        }
+        
+        // Update UI with processed data
+        function updateUI(data) {
+            // Summary stats
+            document.getElementById('totalSessions').textContent = data.totalSessions;
+            document.getElementById('processedSessions').textContent = data.processedSessions;
+            document.getElementById('failedSessions').textContent = data.failedSessions;
+            document.getElementById('overallScoreBackend').textContent = data.overallScoreBackend?.toFixed(1) || '0';
+            
+            // Overall Score (calculated)
+            const overallScore = data.overallCalculatedScore;
+            document.getElementById('overallScore').textContent = overallScore.toFixed(1);
+            document.getElementById('overallScoreBar').style.width = `${overallScore}%`;
+            document.getElementById('overallScoreBar').className = `progress-fill ${getProgressBarClass(overallScore)}`;
+            
+            // Chat Completion Rate
+            document.getElementById('completionRate').textContent = `${data.chatCompletionRate.toFixed(1)}%`;
+            document.getElementById('completionBreakdown').textContent = data.chatCompletionBreakdown;
+            document.getElementById('completionBar').style.width = `${data.chatCompletionRate}%`;
+            document.getElementById('completionBar').className = `progress-fill ${getProgressBarClass(data.chatCompletionRate)}`;
+            
+            // Issue Resolution Rate
+            document.getElementById('resolutionRate').textContent = `${data.resolutionRate.toFixed(1)}%`;
+            document.getElementById('resolutionBreakdown').textContent = data.resolutionBreakdown;
+            document.getElementById('resolutionBar').style.width = `${data.resolutionRate}%`;
+            document.getElementById('resolutionBar').className = `progress-fill ${getProgressBarClass(data.resolutionRate)}`;
+            
+            // User Experience
+            document.getElementById('userExp').textContent = `${data.userExperienceLevel.toFixed(1)}/5`;
+            document.getElementById('userExpBreakdown').textContent = data.userExperienceBreakdown;
+            document.getElementById('userExpBar').style.width = `${data.userExperiencePercent}%`;
+            document.getElementById('userExpBar').className = `progress-fill ${getProgressBarClass(data.userExperiencePercent)}`;
+            
+            // User Effort
+            document.getElementById('userEffort').textContent = `${data.userEffortLevel.toFixed(1)}/5`;
+            document.getElementById('userEffortBreakdown').textContent = data.userEffortBreakdown;
+            document.getElementById('userEffortBar').style.width = `${data.userEffortPercent}%`;
+            document.getElementById('userEffortBar').className = `progress-fill ${getProgressBarClass(data.userEffortPercent)}`;
+            
+            // Response Accuracy
+            document.getElementById('accuracy').textContent = `${data.accuracyPercent.toFixed(1)}%`;
+            document.getElementById('accuracyBreakdown').textContent = data.accuracyBreakdown;
+            document.getElementById('accuracyBar').style.width = `${data.accuracyPercent}%`;
+            document.getElementById('accuracyBar').className = `progress-fill ${getProgressBarClass(data.accuracyPercent)}`;
+            
+            // Human Escalation Rate
+            document.getElementById('escalationRate').textContent = `${data.escalationRate.toFixed(1)}%`;
+            document.getElementById('escalationBreakdown').textContent = data.escalationBreakdown;
+            document.getElementById('escalationBar').style.width = `${data.escalationRate}%`;
+            // For escalation, lower is better, so invert the color logic
+            const escalationColorClass = data.escalationRate <= 10 ? 'excellent' : 
+                                        data.escalationRate <= 20 ? 'good' : 
+                                        data.escalationRate <= 30 ? 'average' : 'poor';
+            document.getElementById('escalationBar').className = `progress-fill ${escalationColorClass}`;
+            
+            // User Sentiment
+            document.getElementById('userSentiment').textContent = data.userSentimentPrimary;
+            document.getElementById('sentimentBreakdown').textContent = data.sentimentBreakdown;
+            document.getElementById('sentimentBar').style.width = `${data.sentimentScore}%`;
+            document.getElementById('sentimentBar').className = `progress-fill ${getProgressBarClass(data.sentimentScore)}`;
+            
+            // Bot Tone
+            document.getElementById('botTone').textContent = data.botTonePrimary;
+            document.getElementById('botToneBreakdown').textContent = data.botToneBreakdown;
+            document.getElementById('botToneBar').style.width = `${data.botToneScore}%`;
+            document.getElementById('botToneBar').className = `progress-fill ${getProgressBarClass(data.botToneScore)}`;
+            
+            // AnyDesk Usage
+            document.getElementById('anydeskUsage').textContent = `${data.anydeskUsage.toFixed(1)}%`;
+            document.getElementById('anydeskBreakdown').textContent = data.anydeskBreakdown;
+            document.getElementById('anydeskBar').style.width = `${data.anydeskUsage}%`;
+            document.getElementById('anydeskBar').className = `progress-fill ${getProgressBarClass(data.anydeskUsage)}`;
+        }
+        
+        // Helper function to get progress bar color class
+        function getProgressBarClass(percentage) {
+            if (percentage >= 80) return 'excellent';
+            if (percentage >= 60) return 'good';
+            if (percentage >= 40) return 'average';
+            return 'poor';
+        }
+        
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorSection').classList.remove('hidden');
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+        
+        // Main analysis function
+        async function analyzeConversations() {
+            const fromDate = document.getElementById('dateFrom').value;
+            const toDate = document.getElementById('dateTo').value;
+            
+            if (!fromDate || !toDate) {
+                showError('Please select both from and to dates.');
+                return;
+            }
+            
+            if (new Date(fromDate) > new Date(toDate)) {
+                showError('From date cannot be later than to date.');
+                return;
+            }
+            
+            // Reset UI
+            document.getElementById('errorSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+            
+            const startTime = Date.now();
+            
+            try {
+                // Step 1: Check backend health
+                document.getElementById('progressText').textContent = 'Checking backend connection...';
+                const isHealthy = await checkBackendHealth();
+                if (!isHealthy) {
+                    throw new Error('Backend server is not healthy. Please check your Node.js server.');
+                }
+                
+                // Step 2: Get session count preview
+                document.getElementById('progressText').textContent = 'Getting session count...';
+                try {
+                    const sessionCount = await getSessionCount(fromDate, toDate);
+                    document.getElementById('totalSessions').textContent = sessionCount;
+                    
+                    if (sessionCount === 0) {
+                        showError('No chat sessions found for the selected date range.');
+                        return;
+                    }
+                    
+                    if (sessionCount > 100) {
+                        const proceed = confirm(`Found ${sessionCount} sessions. This analysis may take ${Math.ceil(sessionCount / 10)} minutes. Continue?`);
+                        if (!proceed) {
+                            document.getElementById('loadingSection').classList.add('hidden');
+                            document.getElementById('analyzeBtn').disabled = false;
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not get session count preview:', error);
+                }
+                
+                // Step 3: Start analysis via backend
+                document.getElementById('progressText').textContent = 'Starting conversation analysis...';
+                const backendData = await analyzeConversationsViaAPI(fromDate, toDate);
+                
+                if (backendData.processedSessions === 0) {
+                    showError('No sessions could be processed. Please check your workflow API configuration.');
+                    return;
+                }
+                
+                // Step 4: Process backend data
+                document.getElementById('progressText').textContent = 'Processing results...';
+                const processedData = processBackendData(backendData);
+                
+                if (!processedData) {
+                    showError('Failed to process analysis results.');
+                    return;
+                }
+                
+                // Step 5: Update UI
+                const endTime = Date.now();
+                const totalTime = Math.round((endTime - startTime) / 1000);
+                
+                document.getElementById('analysisTime').textContent = `${totalTime}s`;
+                document.getElementById('avgResponseTime').textContent = 
+                    `${Math.round(backendData.executionTime * 1000 / backendData.processedSessions)}ms`;
+                
+                updateUI(processedData);
+                
+                // Show results
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('resultsSection').classList.remove('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
+                
+                console.log('Analysis completed successfully:', {
+                    backendData,
+                    processedData,
+                    totalTime: totalTime
+                });
+                
+                // Show success message if there were failed sessions
+                if (backendData.failedSessions > 0) {
+                    const message = `Analysis completed with ${backendData.failedSessions} failed sessions out of ${backendData.totalSessions} total.`;
+                    console.warn(message);
+                }
+                
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                showError(`Analysis failed: ${error.message}`);
+            }
+        }
+        
+        // Initialize dashboard with backend connection check
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('AI Chatbot Quality Analytics Dashboard loaded successfully');
+            
+            // Set default dates (last 7 days)
+            const today = new Date();
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
+            
+            // Check backend connectivity
+            try {
+                const isHealthy = await checkBackendHealth();
+                if (!isHealthy) {
+                    showError('Backend server is not responding. Please ensure the Node.js server is running on port 3001.');
+                }
+            } catch (error) {
+                console.warn('Initial backend health check failed:', error);
+                showError('Cannot connect to backend server. Please ensure the Node.js server is running on port 3001.');
+            }
+        });
+        
+        // Helper function to format numbers
+        function formatNumber(num, decimals = 1) {
+            return Number(num).toFixed(decimals);
+        }
+    </script>
+</body>
+</html>
