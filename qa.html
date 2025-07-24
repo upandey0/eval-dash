@@ -139,6 +139,8 @@
         .metric-card.warning { border-left-color: #f39c12; }
         .metric-card.danger { border-left-color: #e74c3c; }
         .metric-card.info { border-left-color: #9b59b6; }
+        .metric-card.purple { border-left-color: #8e44ad; }
+        .metric-card.teal { border-left-color: #1abc9c; }
         
         .metric-header {
             display: flex;
@@ -312,22 +314,18 @@
                         <div class="stat-value" id="analysisTime">0s</div>
                         <div class="stat-label">Analysis Duration</div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="overallScoreBackend">0</div>
-                        <div class="stat-label">Backend Score</div>
-                    </div>
                 </div>
             </div>
             
             <div class="metrics-grid">
-                <!-- Overall Quality Score -->
+                <!-- Overall Quality Score (From Backend) -->
                 <div class="metric-card primary">
                     <div class="metric-header">
                         <span class="metric-title">Overall Quality Score</span>
                         <span style="font-size: 20px;">📊</span>
                     </div>
                     <div class="metric-value" id="overallScore">0</div>
-                    <div class="metric-subtitle">Weighted average across all metrics</div>
+                    <div class="metric-subtitle">Backend calculated weighted score</div>
                     <div class="progress-bar">
                         <div class="progress-fill good" id="overallScoreBar" style="width: 0%"></div>
                     </div>
@@ -489,13 +487,81 @@
                         <span>Complex Issues</span>
                     </div>
                 </div>
+
+                <!-- NEW: Overall Response Quality Distribution -->
+                <div class="metric-card purple">
+                    <div class="metric-header">
+                        <span class="metric-title">Response Quality Distribution</span>
+                        <span style="font-size: 20px;">⭐</span>
+                    </div>
+                    <div class="metric-value" id="responseQualityPrimary">Excellent</div>
+                    <div class="metric-subtitle" id="responseQualityBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="responseQualityBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Quality Levels</span>
+                        <span>Target: Excellent</span>
+                    </div>
+                </div>
+
+                <!-- NEW: Escalation Necessity -->
+                <div class="metric-card danger">
+                    <div class="metric-header">
+                        <span class="metric-title">Escalation Necessity</span>
+                        <span style="font-size: 20px;">⚠️</span>
+                    </div>
+                    <div class="metric-value" id="escalationNecessity">0%</div>
+                    <div class="metric-subtitle" id="escalationNecessityBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="escalationNecessityBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Necessary Escalations</span>
+                        <span>Lower is better</span>
+                    </div>
+                </div>
+
+                <!-- NEW: Performance Distribution (Latency) -->
+                <div class="metric-card teal">
+                    <div class="metric-header">
+                        <span class="metric-title">Performance Distribution</span>
+                        <span style="font-size: 20px;">⚡</span>
+                    </div>
+                    <div class="metric-value" id="performancePrimary">Good</div>
+                    <div class="metric-subtitle" id="performanceBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill excellent" id="performanceBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Response Speed</span>
+                        <span>Target: Good</span>
+                    </div>
+                </div>
+
+                <!-- NEW: Response Components Quality -->
+                <div class="metric-card warning">
+                    <div class="metric-header">
+                        <span class="metric-title">Response Components</span>
+                        <span style="font-size: 20px;">🧩</span>
+                    </div>
+                    <div class="metric-value" id="responseComponents">0%</div>
+                    <div class="metric-subtitle" id="responseComponentsBreakdown">--</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" id="responseComponentsBar" style="width: 0%"></div>
+                    </div>
+                    <div class="breakdown">
+                        <span>Clear, Concise, Relevant</span>
+                        <span>Target: 90%+</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
     <script>
         // Configuration
-        const BACKEND_API_URL = 'https://eval-sys-back.onrender.com/api'; // Update this with your backend server URL
+        const BACKEND_API_URL = 'https://eval-sys-back.onrender.com/api'; // Updated to localhost:3001
         
         // Check backend health
         async function checkBackendHealth() {
@@ -559,7 +625,7 @@
             }
         }
         
-        // Process backend data and update UI
+        // Process backend data and update UI - SIMPLIFIED to use backend score directly
         function processBackendData(backendData) {
             const aggregateStats = backendData.aggregateStats;
             
@@ -591,14 +657,34 @@
             
             const escalationYes = aggregateStats.average_human_escalation_rate?.yes || 0;
             const escalationNo = aggregateStats.average_human_escalation_rate?.no || 0;
-            
+
+            // NEW: Extract additional distributions
+            const responseQualityExcellent = aggregateStats.overall_response_quality_distribution?.excellent || 0;
+            const responseQualityGood = aggregateStats.overall_response_quality_distribution?.good || 0;
+            const responseQualityFair = aggregateStats.overall_response_quality_distribution?.fair || 0;
+            const responseQualityPoor = aggregateStats.overall_response_quality_distribution?.poor || 0;
+
+            const escalationNecessaryYes = aggregateStats.escalation_necessity_distribution?.yes || 0;
+            const escalationNecessaryNo = aggregateStats.escalation_necessity_distribution?.no || 0;
+
+            const performanceGood = aggregateStats.performance_distribution?.good || 0;
+            const performanceAverage = aggregateStats.performance_distribution?.average || 0;
+            const performanceBad = aggregateStats.performance_distribution?.bad || 0;
+
+            const responseComponentsClear = aggregateStats.response_components_distribution?.is_clear?.yes || 0;
+            const responseComponentsConcise = aggregateStats.response_components_distribution?.is_concise?.yes || 0;
+            const responseComponentsEasy = aggregateStats.response_components_distribution?.is_easy_to_understand?.yes || 0;
+            const responseComponentsRelevant = aggregateStats.response_components_distribution?.is_relevant?.yes || 0;
+
             return {
                 // Basic stats
                 totalSessions: backendData.totalSessions,
                 processedSessions: backendData.processedSessions,
                 failedSessions: backendData.failedSessions || 0,
                 executionTime: backendData.executionTime,
-                overallScoreBackend: backendData.overallScore,
+                
+                // FIXED: Use backend calculated overall score directly
+                overallScore: backendData.overallScore || 0,
                 
                 // Chat completion
                 chatCompletionRate: chatCompletionYes,
@@ -643,43 +729,27 @@
                 // Escalation
                 escalationRate: escalationYes,
                 escalationBreakdown: `Escalated: ${escalationYes}% | Not Escalated: ${escalationNo}%`,
-                
-                // Overall calculated score (weighted)
-                overallCalculatedScore: this.calculateOverallScore({
-                    chatCompletionRate: chatCompletionYes,
-                    resolutionRate: resolutionResolved,
-                    userExperiencePercent: (userExperienceLevel / 5) * 100,
-                    accuracyPercent: accuracyCorrect + accuracyPartial,
-                    escalationScore: escalationNo, // No escalation is good
-                    userEffortPercent: ((6 - userEffortLevel) / 5) * 100,
-                    sentimentScore: sentimentNeutral + (sentimentPositive || 0)
-                })
+
+                // NEW: Response Quality Distribution
+                responseQualityPrimary: responseQualityExcellent > responseQualityGood && responseQualityExcellent > responseQualityFair ? 'Excellent' :
+                                       responseQualityGood > responseQualityFair ? 'Good' : 'Fair',
+                responseQualityBreakdown: `Excellent: ${responseQualityExcellent}% | Good: ${responseQualityGood}% | Fair: ${responseQualityFair}% | Poor: ${responseQualityPoor}%`,
+                responseQualityScore: responseQualityExcellent + responseQualityGood,
+
+                // NEW: Escalation Necessity
+                escalationNecessityRate: escalationNecessaryYes,
+                escalationNecessityBreakdown: `Necessary: ${escalationNecessaryYes}% | Not Necessary: ${escalationNecessaryNo}%`,
+
+                // NEW: Performance Distribution
+                performancePrimary: performanceGood > performanceAverage && performanceGood > performanceBad ? 'Good' :
+                                   performanceAverage > performanceBad ? 'Average' : 'Bad',
+                performanceBreakdown: `Good: ${performanceGood}% | Average: ${performanceAverage}% | Bad: ${performanceBad}%`,
+                performanceScore: performanceGood,
+
+                // NEW: Response Components
+                responseComponentsAverage: (responseComponentsClear + responseComponentsConcise + responseComponentsEasy + responseComponentsRelevant) / 4,
+                responseComponentsBreakdown: `Clear: ${responseComponentsClear}% | Concise: ${responseComponentsConcise}% | Easy: ${responseComponentsEasy}% | Relevant: ${responseComponentsRelevant}%`
             };
-        }
-        
-        // Calculate overall weighted score
-        function calculateOverallScore(metrics) {
-            const weights = {
-                chatCompletion: 0.20,
-                resolution: 0.20,
-                userExperience: 0.15,
-                accuracy: 0.15,
-                escalation: 0.10,
-                userEffort: 0.10,
-                sentiment: 0.10
-            };
-            
-            const weightedScore = (
-                (metrics.chatCompletionRate * weights.chatCompletion) +
-                (metrics.resolutionRate * weights.resolution) +
-                (metrics.userExperiencePercent * weights.userExperience) +
-                (metrics.accuracyPercent * weights.accuracy) +
-                (metrics.escalationScore * weights.escalation) +
-                (metrics.userEffortPercent * weights.userEffort) +
-                (metrics.sentimentScore * weights.sentiment)
-            );
-            
-            return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
         }
         
         // Update UI with processed data
@@ -688,10 +758,9 @@
             document.getElementById('totalSessions').textContent = data.totalSessions;
             document.getElementById('processedSessions').textContent = data.processedSessions;
             document.getElementById('failedSessions').textContent = data.failedSessions;
-            document.getElementById('overallScoreBackend').textContent = data.overallScoreBackend?.toFixed(1) || '0';
             
-            // Overall Score (calculated)
-            const overallScore = data.overallCalculatedScore;
+            // FIXED: Overall Score - Use backend score directly, no client calculation
+            const overallScore = data.overallScore;
             document.getElementById('overallScore').textContent = overallScore.toFixed(1);
             document.getElementById('overallScoreBar').style.width = `${overallScore}%`;
             document.getElementById('overallScoreBar').className = `progress-fill ${getProgressBarClass(overallScore)}`;
@@ -753,6 +822,33 @@
             document.getElementById('anydeskBreakdown').textContent = data.anydeskBreakdown;
             document.getElementById('anydeskBar').style.width = `${data.anydeskUsage}%`;
             document.getElementById('anydeskBar').className = `progress-fill ${getProgressBarClass(data.anydeskUsage)}`;
+
+            // NEW: Response Quality Distribution
+            document.getElementById('responseQualityPrimary').textContent = data.responseQualityPrimary;
+            document.getElementById('responseQualityBreakdown').textContent = data.responseQualityBreakdown;
+            document.getElementById('responseQualityBar').style.width = `${data.responseQualityScore}%`;
+            document.getElementById('responseQualityBar').className = `progress-fill ${getProgressBarClass(data.responseQualityScore)}`;
+
+            // NEW: Escalation Necessity
+            document.getElementById('escalationNecessity').textContent = `${data.escalationNecessityRate.toFixed(1)}%`;
+            document.getElementById('escalationNecessityBreakdown').textContent = data.escalationNecessityBreakdown;
+            document.getElementById('escalationNecessityBar').style.width = `${100 - data.escalationNecessityRate}%`; // Invert for display
+            const escalationNecessityColorClass = data.escalationNecessityRate <= 10 ? 'excellent' : 
+                                                 data.escalationNecessityRate <= 20 ? 'good' : 
+                                                 data.escalationNecessityRate <= 30 ? 'average' : 'poor';
+            document.getElementById('escalationNecessityBar').className = `progress-fill ${escalationNecessityColorClass}`;
+
+            // NEW: Performance Distribution
+            document.getElementById('performancePrimary').textContent = data.performancePrimary;
+            document.getElementById('performanceBreakdown').textContent = data.performanceBreakdown;
+            document.getElementById('performanceBar').style.width = `${data.performanceScore}%`;
+            document.getElementById('performanceBar').className = `progress-fill ${getProgressBarClass(data.performanceScore)}`;
+
+            // NEW: Response Components
+            document.getElementById('responseComponents').textContent = `${data.responseComponentsAverage.toFixed(1)}%`;
+            document.getElementById('responseComponentsBreakdown').textContent = data.responseComponentsBreakdown;
+            document.getElementById('responseComponentsBar').style.width = `${data.responseComponentsAverage}%`;
+            document.getElementById('responseComponentsBar').className = `progress-fill ${getProgressBarClass(data.responseComponentsAverage)}`;
         }
         
         // Helper function to get progress bar color class
